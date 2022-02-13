@@ -10,11 +10,10 @@ typedef void OnStartDragList(int? listIndex);
 class BoardList extends StatefulWidget {
   const BoardList({
     Key? key,
-    this.header,
+    required this.header,
     this.items,
     this.footer,
     this.backgroundColor,
-    this.headerBackgroundColor,
     this.boardView,
     this.draggable = true,
     this.index,
@@ -23,11 +22,10 @@ class BoardList extends StatefulWidget {
     this.onStartDragList,
   }) : super(key: key);
 
-  final List<Widget>? header;
+  final Widget header;
   final Widget? footer;
   final List<BoardItem>? items;
   final Color? backgroundColor;
-  final Color? headerBackgroundColor;
   final BoardViewState? boardView;
   final int? index;
   final OnDropList? onDropList;
@@ -76,44 +74,30 @@ class BoardListState extends State<BoardList> with AutomaticKeepAliveClientMixin
   }
 
   Widget _header() {
-    if (widget.header != null) {
-      Color? headerBackgroundColor = Color.fromARGB(255, 255, 255, 255);
-      if (widget.headerBackgroundColor != null) {
-        headerBackgroundColor = widget.headerBackgroundColor;
-      }
-      return GestureDetector(
-        onTap: () {
-          if (widget.onTapList != null) {
-            widget.onTapList!(widget.index);
-          }
-        },
-        onTapDown: (otd) {
-          if (widget.draggable) {
-            RenderBox object = context.findRenderObject() as RenderBox;
-            Offset pos = object.localToGlobal(Offset.zero);
-            widget.boardView!.initialX = pos.dx;
-            widget.boardView!.initialY = pos.dy;
+    return GestureDetector(
+      onTap: () {
+        if (widget.onTapList != null) widget.onTapList!(widget.index);
+      },
+      onTapDown: (otd) {
+        if (widget.draggable) {
+          RenderBox object = context.findRenderObject() as RenderBox;
+          Offset pos = object.localToGlobal(Offset.zero);
+          widget.boardView!.initialX = pos.dx;
+          widget.boardView!.initialY = pos.dy;
 
-            widget.boardView!.rightListX = pos.dx + object.size.width;
-            widget.boardView!.leftListX = pos.dx;
-          }
-        },
-        onTapCancel: () {},
-        onLongPress: () {
-          if (!widget.boardView!.widget.isSelecting && widget.draggable) {
-            _startDrag(widget, context);
-          }
-        },
-        child: Container(
-          color: widget.headerBackgroundColor,
-          child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: widget.header!),
-        ),
-      );
-    }
-    return Container();
+          widget.boardView!.rightListX = pos.dx + object.size.width;
+          widget.boardView!.leftListX = pos.dx;
+        }
+      },
+      onTapCancel: () {},
+      // FIXME: Let's user set a custom press duration.
+      onLongPress: () {
+        if (!widget.boardView!.widget.isSelecting && widget.draggable) {
+          _startDrag(widget, context);
+        }
+      },
+      child: widget.header,
+    );
   }
 
   Widget _body() {
