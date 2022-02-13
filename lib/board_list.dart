@@ -13,7 +13,9 @@ class BoardList extends StatefulWidget {
     required this.header,
     this.items,
     this.footer,
-    this.backgroundColor,
+    this.mainAxisSize = MainAxisSize.min,
+    this.mainAxisAlignment = MainAxisAlignment.start,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
     this.boardView,
     this.draggable = true,
     this.index,
@@ -23,9 +25,11 @@ class BoardList extends StatefulWidget {
   }) : super(key: key);
 
   final Widget header;
-  final Widget? footer;
   final List<BoardItem>? items;
-  final Color? backgroundColor;
+  final Widget? footer;
+  final MainAxisSize mainAxisSize;
+  final MainAxisAlignment mainAxisAlignment;
+  final CrossAxisAlignment crossAxisAlignment;
   final BoardViewState? boardView;
   final int? index;
   final OnDropList? onDropList;
@@ -48,28 +52,20 @@ class BoardListState extends State<BoardList> with AutomaticKeepAliveClientMixin
   Widget build(BuildContext context) {
     super.build(context);
 
-    Color? backgroundColor = Color.fromARGB(255, 255, 255, 255);
-
-    if (widget.backgroundColor != null) {
-      backgroundColor = widget.backgroundColor;
-    }
     if (widget.boardView!.listStates.length > widget.index!) {
       widget.boardView!.listStates.removeAt(widget.index!);
     }
     widget.boardView!.listStates.insert(widget.index!, this);
 
-    return Container(
-      margin: EdgeInsets.all(8),
-      decoration: BoxDecoration(color: backgroundColor),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          _header(),
-          _body(),
-          widget.footer ?? Container(),
-        ],
-      ),
+    return Column(
+      mainAxisSize: widget.mainAxisSize,
+      mainAxisAlignment: widget.mainAxisAlignment,
+      crossAxisAlignment: widget.crossAxisAlignment,
+      children: [
+        _header(),
+        _body(),
+        widget.footer ?? Container(),
+      ],
     );
   }
 
