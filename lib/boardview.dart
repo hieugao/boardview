@@ -1,15 +1,44 @@
 library boardview;
 
-import 'dart:math';
-
-import 'package:boardview/boardview_controller.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'dart:core';
-import 'package:boardview/board_list.dart';
+
+import 'package:flutter/material.dart';
+
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 
+import './boardview_controller.dart';
+import './board_list.dart';
+
+class ScrollbarStyle {
+  ScrollbarStyle({
+    this.radius = const Radius.circular(10),
+    this.hoverThickness = 10,
+    this.thickness = 10,
+    this.color = Colors.black,
+  });
+
+  double hoverThickness;
+  double thickness;
+  Radius radius;
+  Color color;
+}
+
 class BoardView extends StatefulWidget {
+  BoardView({
+    Key? key,
+    this.itemInMiddleWidget,
+    this.scrollbar,
+    this.scrollbarStyle,
+    this.boardViewController,
+    this.dragDelay = 300,
+    this.onDropItemInMiddleWidget,
+    this.isSelecting = false,
+    this.lists,
+    this.width = 280,
+    this.middleWidget,
+    this.bottomPadding,
+  }) : super(key: key);
+
   final List<BoardList>? lists;
   final double width;
   Widget? middleWidget;
@@ -19,28 +48,11 @@ class BoardView extends StatefulWidget {
   ScrollbarStyle? scrollbarStyle;
   BoardViewController? boardViewController;
   int dragDelay;
-
   Function(bool)? itemInMiddleWidget;
   OnDropBottomWidget? onDropItemInMiddleWidget;
-  BoardView(
-      {Key? key,
-      this.itemInMiddleWidget,
-      this.scrollbar,
-      this.scrollbarStyle,
-      this.boardViewController,
-      this.dragDelay = 300,
-      this.onDropItemInMiddleWidget,
-      this.isSelecting = false,
-      this.lists,
-      this.width = 280,
-      this.middleWidget,
-      this.bottomPadding})
-      : super(key: key);
 
   @override
-  State<StatefulWidget> createState() {
-    return BoardViewState();
-  }
+  State<StatefulWidget> createState() => BoardViewState();
 }
 
 typedef void OnDropBottomWidget(int? listIndex, int? itemIndex, double percentX);
@@ -86,6 +98,8 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
 
   var pointer;
 
+  bool shown = true;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -97,241 +111,25 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
     }
   }
 
-  void moveDown() {
-    if (topItemY != null) {
-      topItemY = topItemY! + listStates[draggedListIndex!].itemStates[draggedItemIndex! + 1].height;
-    }
-    if (bottomItemY != null) {
-      bottomItemY =
-          bottomItemY! + listStates[draggedListIndex!].itemStates[draggedItemIndex! + 1].height;
-    }
-    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
-    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
-    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
-    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
-    if (draggedItemIndex != null) {
-      draggedItemIndex = draggedItemIndex! + 1;
-    }
-    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
-    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
-    if (listStates[draggedListIndex!].mounted) {
-      listStates[draggedListIndex!].setState(() {});
-    }
-  }
-
-  void moveUp() {
-    if (topItemY != null) {
-      topItemY = topItemY! - listStates[draggedListIndex!].itemStates[draggedItemIndex! - 1].height;
-    }
-    if (bottomItemY != null) {
-      bottomItemY =
-          bottomItemY! - listStates[draggedListIndex!].itemStates[draggedItemIndex! - 1].height;
-    }
-    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
-    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
-    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
-    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
-    if (draggedItemIndex != null) {
-      draggedItemIndex = draggedItemIndex! - 1;
-    }
-    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
-    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
-    if (listStates[draggedListIndex!].mounted) {
-      listStates[draggedListIndex!].setState(() {});
-    }
-  }
-
-  void moveListRight() {
-    var list = widget.lists![draggedListIndex!];
-    var listState = listStates[draggedListIndex!];
-    widget.lists!.removeAt(draggedListIndex!);
-    listStates.removeAt(draggedListIndex!);
-    if (draggedListIndex != null) {
-      draggedListIndex = draggedListIndex! + 1;
-    }
-    widget.lists!.insert(draggedListIndex!, list);
-    listStates.insert(draggedListIndex!, listState);
-    canDrag = false;
-    if (boardViewController != null && boardViewController.hasClients) {
-      int? tempListIndex = draggedListIndex;
-      boardViewController
-          .animateTo(draggedListIndex! * widget.width,
-              duration: new Duration(milliseconds: 400), curve: Curves.ease)
-          .whenComplete(() {
-        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
-        Offset pos = object.localToGlobal(Offset.zero);
-        leftListX = pos.dx;
-        rightListX = pos.dx + object.size.width;
-        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
-          canDrag = true;
-        });
-      });
-    }
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void moveRight() {
-    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
-    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
-    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
-    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
-    if (listStates[draggedListIndex!].mounted) {
-      listStates[draggedListIndex!].setState(() {});
-    }
-    if (draggedListIndex != null) {
-      draggedListIndex = draggedListIndex! + 1;
-    }
-    double closestValue = 10000;
-    draggedItemIndex = 0;
-    for (int i = 0; i < listStates[draggedListIndex!].itemStates.length; i++) {
-      if (listStates[draggedListIndex!].itemStates[i].mounted &&
-          listStates[draggedListIndex!].itemStates[i].context != null) {
-        RenderBox box =
-            listStates[draggedListIndex!].itemStates[i].context.findRenderObject() as RenderBox;
-        Offset pos = box.localToGlobal(Offset.zero);
-        var temp = (pos.dy - dy! + (box.size.height / 2)).abs();
-        if (temp < closestValue) {
-          closestValue = temp;
-          draggedItemIndex = i;
-          dyInit = dy;
-        }
+  // @override
+  void run() {
+    if (pointer != null) {
+      dx = pointer.position.dx;
+      dy = pointer.position.dy;
+      if (mounted) {
+        setState(() {});
       }
     }
-    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
-    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
-    canDrag = false;
-    if (listStates[draggedListIndex!].mounted) {
-      listStates[draggedListIndex!].setState(() {});
-    }
-    if (boardViewController != null && boardViewController.hasClients) {
-      int? tempListIndex = draggedListIndex;
-      int? tempItemIndex = draggedItemIndex;
-      boardViewController
-          .animateTo(draggedListIndex! * widget.width,
-              duration: new Duration(milliseconds: 400), curve: Curves.ease)
-          .whenComplete(() {
-        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
-        Offset pos = object.localToGlobal(Offset.zero);
-        leftListX = pos.dx;
-        rightListX = pos.dx + object.size.width;
-        RenderBox box = listStates[tempListIndex]
-            .itemStates[tempItemIndex!]
-            .context
-            .findRenderObject() as RenderBox;
-        Offset itemPos = box.localToGlobal(Offset.zero);
-        topItemY = itemPos.dy;
-        bottomItemY = itemPos.dy + box.size.height;
-        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
-          canDrag = true;
-        });
-      });
-    }
-    if (mounted) {
-      setState(() {});
-    }
   }
 
-  void moveListLeft() {
-    var list = widget.lists![draggedListIndex!];
-    var listState = listStates[draggedListIndex!];
-    widget.lists!.removeAt(draggedListIndex!);
-    listStates.removeAt(draggedListIndex!);
-    if (draggedListIndex != null) {
-      draggedListIndex = draggedListIndex! - 1;
-    }
-    widget.lists!.insert(draggedListIndex!, list);
-    listStates.insert(draggedListIndex!, listState);
-    canDrag = false;
-    if (boardViewController != null && boardViewController.hasClients) {
-      int? tempListIndex = draggedListIndex;
-      boardViewController
-          .animateTo(draggedListIndex! * widget.width,
-              duration: new Duration(milliseconds: widget.dragDelay), curve: Curves.ease)
-          .whenComplete(() {
-        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
-        Offset pos = object.localToGlobal(Offset.zero);
-        leftListX = pos.dx;
-        rightListX = pos.dx + object.size.width;
-        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
-          canDrag = true;
-        });
-      });
-    }
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void moveLeft() {
-    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
-    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
-    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
-    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
-    if (listStates[draggedListIndex!].mounted) {
-      listStates[draggedListIndex!].setState(() {});
-    }
-    if (draggedListIndex != null) {
-      draggedListIndex = draggedListIndex! - 1;
-    }
-    double closestValue = 10000;
-    draggedItemIndex = 0;
-    for (int i = 0; i < listStates[draggedListIndex!].itemStates.length; i++) {
-      if (listStates[draggedListIndex!].itemStates[i].mounted &&
-          listStates[draggedListIndex!].itemStates[i].context != null) {
-        RenderBox box =
-            listStates[draggedListIndex!].itemStates[i].context.findRenderObject() as RenderBox;
-        Offset pos = box.localToGlobal(Offset.zero);
-        var temp = (pos.dy - dy! + (box.size.height / 2)).abs();
-        if (temp < closestValue) {
-          closestValue = temp;
-          draggedItemIndex = i;
-          dyInit = dy;
-        }
-      }
-    }
-    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
-    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
-    canDrag = false;
-    if (listStates[draggedListIndex!].mounted) {
-      listStates[draggedListIndex!].setState(() {});
-    }
-    if (boardViewController != null && boardViewController.hasClients) {
-      int? tempListIndex = draggedListIndex;
-      int? tempItemIndex = draggedItemIndex;
-      boardViewController
-          .animateTo(draggedListIndex! * widget.width,
-              duration: new Duration(milliseconds: 400), curve: Curves.ease)
-          .whenComplete(() {
-        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
-        Offset pos = object.localToGlobal(Offset.zero);
-        leftListX = pos.dx;
-        rightListX = pos.dx + object.size.width;
-        RenderBox box = listStates[tempListIndex]
-            .itemStates[tempItemIndex!]
-            .context
-            .findRenderObject() as RenderBox;
-        Offset itemPos = box.localToGlobal(Offset.zero);
-        topItemY = itemPos.dy;
-        bottomItemY = itemPos.dy + box.size.height;
-        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
-          canDrag = true;
-        });
-      });
-    }
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  bool shown = true;
-
-  @override
   Widget build(BuildContext context) {
-    print("dy:${dy}");
-    print("topListY:${topListY}");
-    print("bottomListY:${bottomListY}");
+    super.build(context);
+
+    // FIXME: Use debug instead.
+    // print("dy:${dy}");
+    // print("topListY:${topListY}");
+    // print("bottomListY:${bottomListY}");
+
     if (boardViewController.hasClients) {
       WidgetsBinding.instance!.addPostFrameCallback((Duration duration) {
         try {
@@ -470,12 +268,10 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
             }
           }
           if (0 <= draggedListIndex! - 1 && dx! < leftListX!) {
-            //move left
-            moveLeft();
+            _moveLeft();
           }
           if (widget.lists!.length > draggedListIndex! + 1 && dx! > rightListX!) {
-            //move right
-            moveRight();
+            _moveRight();
           }
           if (dy! < topListY! + 70) {
             //scroll up
@@ -511,8 +307,7 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
               dy! <
                   topItemY! -
                       listStates[draggedListIndex!].itemStates[draggedItemIndex! - 1].height / 2) {
-            //move up
-            moveUp();
+            _moveUp();
           }
           double? tempBottom = bottomListY;
           if (widget.middleWidget != null) {
@@ -556,8 +351,7 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
               dy! >
                   bottomItemY! +
                       listStates[draggedListIndex!].itemStates[draggedItemIndex! + 1].height / 2) {
-            //move down
-            moveDown();
+            _moveDown();
           }
         } else {
           //dragging list
@@ -589,12 +383,11 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
             }
           }
           if (widget.lists!.length > draggedListIndex! + 1 && dx! > rightListX!) {
-            //move right
-            moveListRight();
+            _moveListRight();
           }
           if (0 <= draggedListIndex! - 1 && dx! < leftListX!) {
             //move left
-            moveListLeft();
+            _moveListLeft();
           }
         }
       }
@@ -697,25 +490,231 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
             )));
   }
 
-  void run() {
-    if (pointer != null) {
-      dx = pointer.position.dx;
-      dy = pointer.position.dy;
-      if (mounted) {
-        setState(() {});
+  void _moveLeft() {
+    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
+    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
+    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
+    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
+    if (listStates[draggedListIndex!].mounted) {
+      listStates[draggedListIndex!].setState(() {});
+    }
+    if (draggedListIndex != null) {
+      draggedListIndex = draggedListIndex! - 1;
+    }
+    double closestValue = 10000;
+    draggedItemIndex = 0;
+    for (int i = 0; i < listStates[draggedListIndex!].itemStates.length; i++) {
+      if (listStates[draggedListIndex!].itemStates[i].mounted &&
+          listStates[draggedListIndex!].itemStates[i].context != null) {
+        RenderBox box =
+            listStates[draggedListIndex!].itemStates[i].context.findRenderObject() as RenderBox;
+        Offset pos = box.localToGlobal(Offset.zero);
+        var temp = (pos.dy - dy! + (box.size.height / 2)).abs();
+        if (temp < closestValue) {
+          closestValue = temp;
+          draggedItemIndex = i;
+          dyInit = dy;
+        }
       }
     }
+    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
+    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
+    canDrag = false;
+    if (listStates[draggedListIndex!].mounted) {
+      listStates[draggedListIndex!].setState(() {});
+    }
+    if (boardViewController != null && boardViewController.hasClients) {
+      int? tempListIndex = draggedListIndex;
+      int? tempItemIndex = draggedItemIndex;
+      boardViewController
+          .animateTo(draggedListIndex! * widget.width,
+              duration: new Duration(milliseconds: 400), curve: Curves.ease)
+          .whenComplete(() {
+        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
+        Offset pos = object.localToGlobal(Offset.zero);
+        leftListX = pos.dx;
+        rightListX = pos.dx + object.size.width;
+        RenderBox box = listStates[tempListIndex]
+            .itemStates[tempItemIndex!]
+            .context
+            .findRenderObject() as RenderBox;
+        Offset itemPos = box.localToGlobal(Offset.zero);
+        topItemY = itemPos.dy;
+        bottomItemY = itemPos.dy + box.size.height;
+        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
+          canDrag = true;
+        });
+      });
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
-}
 
-class ScrollbarStyle {
-  double hoverThickness;
-  double thickness;
-  Radius radius;
-  Color color;
-  ScrollbarStyle(
-      {this.radius = const Radius.circular(10),
-      this.hoverThickness = 10,
-      this.thickness = 10,
-      this.color = Colors.black});
+  void _moveRight() {
+    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
+    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
+    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
+    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
+    if (listStates[draggedListIndex!].mounted) {
+      listStates[draggedListIndex!].setState(() {});
+    }
+    if (draggedListIndex != null) {
+      draggedListIndex = draggedListIndex! + 1;
+    }
+    double closestValue = 10000;
+    draggedItemIndex = 0;
+    for (int i = 0; i < listStates[draggedListIndex!].itemStates.length; i++) {
+      if (listStates[draggedListIndex!].itemStates[i].mounted &&
+          listStates[draggedListIndex!].itemStates[i].context != null) {
+        RenderBox box =
+            listStates[draggedListIndex!].itemStates[i].context.findRenderObject() as RenderBox;
+        Offset pos = box.localToGlobal(Offset.zero);
+        var temp = (pos.dy - dy! + (box.size.height / 2)).abs();
+        if (temp < closestValue) {
+          closestValue = temp;
+          draggedItemIndex = i;
+          dyInit = dy;
+        }
+      }
+    }
+    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
+    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
+    canDrag = false;
+    if (listStates[draggedListIndex!].mounted) {
+      listStates[draggedListIndex!].setState(() {});
+    }
+    if (boardViewController != null && boardViewController.hasClients) {
+      int? tempListIndex = draggedListIndex;
+      int? tempItemIndex = draggedItemIndex;
+      boardViewController
+          .animateTo(draggedListIndex! * widget.width,
+              duration: new Duration(milliseconds: 400), curve: Curves.ease)
+          .whenComplete(() {
+        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
+        Offset pos = object.localToGlobal(Offset.zero);
+        leftListX = pos.dx;
+        rightListX = pos.dx + object.size.width;
+        RenderBox box = listStates[tempListIndex]
+            .itemStates[tempItemIndex!]
+            .context
+            .findRenderObject() as RenderBox;
+        Offset itemPos = box.localToGlobal(Offset.zero);
+        topItemY = itemPos.dy;
+        bottomItemY = itemPos.dy + box.size.height;
+        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
+          canDrag = true;
+        });
+      });
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _moveUp() {
+    if (topItemY != null) {
+      topItemY = topItemY! - listStates[draggedListIndex!].itemStates[draggedItemIndex! - 1].height;
+    }
+    if (bottomItemY != null) {
+      bottomItemY =
+          bottomItemY! - listStates[draggedListIndex!].itemStates[draggedItemIndex! - 1].height;
+    }
+    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
+    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
+    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
+    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
+    if (draggedItemIndex != null) {
+      draggedItemIndex = draggedItemIndex! - 1;
+    }
+    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
+    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
+    if (listStates[draggedListIndex!].mounted) {
+      listStates[draggedListIndex!].setState(() {});
+    }
+  }
+
+  void _moveDown() {
+    if (topItemY != null) {
+      topItemY = topItemY! + listStates[draggedListIndex!].itemStates[draggedItemIndex! + 1].height;
+    }
+    if (bottomItemY != null) {
+      bottomItemY =
+          bottomItemY! + listStates[draggedListIndex!].itemStates[draggedItemIndex! + 1].height;
+    }
+    var item = widget.lists![draggedListIndex!].items![draggedItemIndex!];
+    widget.lists![draggedListIndex!].items!.removeAt(draggedItemIndex!);
+    var itemState = listStates[draggedListIndex!].itemStates[draggedItemIndex!];
+    listStates[draggedListIndex!].itemStates.removeAt(draggedItemIndex!);
+    if (draggedItemIndex != null) {
+      draggedItemIndex = draggedItemIndex! + 1;
+    }
+    widget.lists![draggedListIndex!].items!.insert(draggedItemIndex!, item);
+    listStates[draggedListIndex!].itemStates.insert(draggedItemIndex!, itemState);
+    if (listStates[draggedListIndex!].mounted) {
+      listStates[draggedListIndex!].setState(() {});
+    }
+  }
+
+  void _moveListRight() {
+    var list = widget.lists![draggedListIndex!];
+    var listState = listStates[draggedListIndex!];
+    widget.lists!.removeAt(draggedListIndex!);
+    listStates.removeAt(draggedListIndex!);
+    if (draggedListIndex != null) {
+      draggedListIndex = draggedListIndex! + 1;
+    }
+    widget.lists!.insert(draggedListIndex!, list);
+    listStates.insert(draggedListIndex!, listState);
+    canDrag = false;
+    if (boardViewController != null && boardViewController.hasClients) {
+      int? tempListIndex = draggedListIndex;
+      boardViewController
+          .animateTo(draggedListIndex! * widget.width,
+              duration: new Duration(milliseconds: 400), curve: Curves.ease)
+          .whenComplete(() {
+        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
+        Offset pos = object.localToGlobal(Offset.zero);
+        leftListX = pos.dx;
+        rightListX = pos.dx + object.size.width;
+        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
+          canDrag = true;
+        });
+      });
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _moveListLeft() {
+    var list = widget.lists![draggedListIndex!];
+    var listState = listStates[draggedListIndex!];
+    widget.lists!.removeAt(draggedListIndex!);
+    listStates.removeAt(draggedListIndex!);
+    if (draggedListIndex != null) {
+      draggedListIndex = draggedListIndex! - 1;
+    }
+    widget.lists!.insert(draggedListIndex!, list);
+    listStates.insert(draggedListIndex!, listState);
+    canDrag = false;
+    if (boardViewController != null && boardViewController.hasClients) {
+      int? tempListIndex = draggedListIndex;
+      boardViewController
+          .animateTo(draggedListIndex! * widget.width,
+              duration: new Duration(milliseconds: widget.dragDelay), curve: Curves.ease)
+          .whenComplete(() {
+        RenderBox object = listStates[tempListIndex!].context.findRenderObject() as RenderBox;
+        Offset pos = object.localToGlobal(Offset.zero);
+        leftListX = pos.dx;
+        rightListX = pos.dx + object.size.width;
+        Future.delayed(new Duration(milliseconds: widget.dragDelay), () {
+          canDrag = true;
+        });
+      });
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
 }

@@ -1,6 +1,6 @@
-import 'package:boardview/board_list.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+
+import './board_list.dart';
 
 typedef void OnDropItem(
     int? listIndex, int? itemIndex, int? oldListIndex, int? oldItemIndex, BoardItemState state);
@@ -10,6 +10,18 @@ typedef void OnDragItem(
     int oldListIndex, int oldItemIndex, int newListIndex, int newItemIndex, BoardItemState state);
 
 class BoardItem extends StatefulWidget {
+  const BoardItem({
+    Key? key,
+    this.boardList,
+    this.item,
+    this.index,
+    this.onDropItem,
+    this.onTapItem,
+    this.onStartDragItem,
+    this.draggable = true,
+    this.onDragItem,
+  }) : super(key: key);
+
   final BoardListState? boardList;
   final Widget? item;
   final int? index;
@@ -19,22 +31,8 @@ class BoardItem extends StatefulWidget {
   final OnDragItem? onDragItem;
   final bool draggable;
 
-  const BoardItem(
-      {Key? key,
-      this.boardList,
-      this.item,
-      this.index,
-      this.onDropItem,
-      this.onTapItem,
-      this.onStartDragItem,
-      this.draggable = true,
-      this.onDragItem})
-      : super(key: key);
-
   @override
-  State<StatefulWidget> createState() {
-    return BoardItemState();
-  }
+  State<StatefulWidget> createState() => BoardItemState();
 }
 
 class BoardItemState extends State<BoardItem> with AutomaticKeepAliveClientMixin {
@@ -87,11 +85,14 @@ class BoardItemState extends State<BoardItem> with AutomaticKeepAliveClientMixin
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     WidgetsBinding.instance!.addPostFrameCallback((_) => afterFirstLayout(context));
     if (widget.boardList!.itemStates.length > widget.index!) {
       widget.boardList!.itemStates.removeAt(widget.index!);
     }
     widget.boardList!.itemStates.insert(widget.index!, this);
+
     return GestureDetector(
       onTapDown: (otd) {
         if (widget.draggable) {
