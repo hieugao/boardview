@@ -1,11 +1,11 @@
-class BoardItemObject{
+// class BoardItemObject{
 
-  String? title;
+//   String? title;
 
-  BoardItemObject({this.title}){
-    if(this.title == null){
-      this.title = "";
-    }
-  }
+//   BoardItemObject({this.title}){
+//     if(this.title == null){
+//       this.title = "";
+//     }
+//   }
 
-}
+// }
