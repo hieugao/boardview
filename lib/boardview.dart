@@ -143,39 +143,15 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
         }
       });
     }
+
     Widget listWidget = ListView.builder(
       physics: ClampingScrollPhysics(),
       itemCount: widget.lists!.length,
       scrollDirection: Axis.horizontal,
       controller: boardViewController,
       itemBuilder: (BuildContext context, int index) {
-        if (widget.lists![index].boardView == null) {
-          widget.lists![index] = BoardList(
-            header: widget.lists![index].header,
-            items: widget.lists![index].items,
-            backgroundColor: widget.lists![index].backgroundColor,
-            footer: widget.lists![index].footer,
-            boardView: this,
-            draggable: widget.lists![index].draggable,
-            onDropList: widget.lists![index].onDropList,
-            onTapList: widget.lists![index].onTapList,
-            onStartDragList: widget.lists![index].onStartDragList,
-          );
-        }
-        if (widget.lists![index].index != index) {
-          widget.lists![index] = BoardList(
-            header: widget.lists![index].header,
-            items: widget.lists![index].items,
-            backgroundColor: widget.lists![index].backgroundColor,
-            footer: widget.lists![index].footer,
-            boardView: this,
-            draggable: widget.lists![index].draggable,
-            index: index,
-            onDropList: widget.lists![index].onDropList,
-            onTapList: widget.lists![index].onTapList,
-            onStartDragList: widget.lists![index].onStartDragList,
-          );
-        }
+        if (widget.lists![index].boardView == null) widget.lists![index] = _boardList(index);
+        if (widget.lists![index].index != index) widget.lists![index] = _boardList(index);
 
         var temp = Container(
             width: widget.width,
@@ -486,6 +462,28 @@ class BoardViewState extends State<BoardView> with AutomaticKeepAliveClientMixin
             child: new Stack(
               children: stackWidgets,
             )));
+  }
+
+  BoardList _boardList(int index) {
+    final theWidget = widget.lists![index];
+
+    return BoardList(
+      header: widget.lists![index].header,
+      items: widget.lists![index].items,
+      footer: widget.lists![index].footer,
+      boardView: this,
+      index: index,
+      draggable: widget.lists![index].draggable,
+      onDropList: widget.lists![index].onDropList,
+      onTapList: widget.lists![index].onTapList,
+      onStartDragList: widget.lists![index].onStartDragList,
+      padding: theWidget.padding,
+      margin: theWidget.margin,
+      decoration: theWidget.decoration,
+      mainAxisSize: theWidget.mainAxisSize,
+      mainAxisAlignment: theWidget.mainAxisAlignment,
+      crossAxisAlignment: theWidget.crossAxisAlignment,
+    );
   }
 
   void _moveLeft() {
